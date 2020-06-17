@@ -1,4 +1,5 @@
 const { query } = require("../db")
+const { err, success } = require('../utils/responseMessage')
 const getUserByName = async(username) => {
   const rows = await query('SELECT * FROM user WHERE username = ?', username)
   if (rows.length === 0) {
@@ -8,32 +9,29 @@ const getUserByName = async(username) => {
 }
 const login = async (params = {}) => {
   if(!params.username || !params.password) {
-    const result = { code: -1, message: '用户名和密码不能为空' }
-    return Promise.resolve(result)
+    return Promise.resolve(err('用户名和密码不能为空'))
   }
   const user = await getUserByName(params.username)
   if(!user) {
-    const result = { code: -1, message: '用户名不存在' }
-    return Promise.resolve(result)
+    return Promise.resolve(err('用户名不存在'))
   }
   if(user.password !== params.password) {
-    const result = { code: -1, message: '密码错误' }
-    return Promise.resolve(result)
+    return Promise.resolve(err('密码错误'))
   }
-  return Promise.resolve({ code: 0, message: 'success', data: rows[0] })
+  return Promise.resolve({ ...success(), data: rows[0] })
 }
 
 const register = async (params = {}) => {
   if(!params.username || !params.password) {
-    const result = { code: -1, message: '用户名和密码不能为空' }
-    return Promise.resolve(result)
+    const result = { code: -1, message: '' }
+    return Promise.resolve(err('用户名和密码不能为空'))
   }
-  const user = await getUserByName()
+  const user = await getUserByName(params.username)
   if(user) {
-    return Promise.resolve({ code: -1, message: '用户名已存在' })
+    return Promise.resolve(err('用户名已存在'))
   }
   const result = await query('INSERT INTO user SET ?', params)
-  return Promise.resolve({ code: 0, message: 'success' })
+  return Promise.resolve(success())
 }
 
 module.exports = {
