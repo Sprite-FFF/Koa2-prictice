@@ -1,2 +1,2 @@
 # Koa2-prictice
-Koa2+MySQL联系
+Koa2+MySQL练习
