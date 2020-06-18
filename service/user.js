@@ -3,6 +3,8 @@ const path = require('path')
 const JWT = require('jsonwebtoken')
 const { query } = require("../db")
 const { err, success } = require('../utils/responseMessage')
+const { resolve } = require('path')
+const { info } = require('console')
 const getUserByName = async(username) => {
   const rows = await query('SELECT * FROM user WHERE username = ?', username)
   if (rows.length === 0) {
@@ -19,13 +21,15 @@ const generateToken = (payload) => {
 }
 
 const verifyToken = (token) => {
-  const rs256Token = Buffer.from(token, 'base64').toString()
-  const publicKey = fs.readFileSync(path.resolve(__dirname, '../config/rsa_public_key.pem'))
-  JWT.verify(rs256Token, publicKey, (_error, decoded) => {
-    if(_error) {
-      return Promise.reject(_error.message)
-    }
-    return Promise.resolve(decoded)
+  return new Promise(resolve => {
+    const rs256Token = Buffer.from(token, 'base64').toString()
+    const publicKey = fs.readFileSync(path.resolve(__dirname, '../config/rsa_public_key.pem'))
+    JWT.verify(rs256Token, publicKey, (_error, decoded) => {
+      if(_error) {
+        return resolve(_error.message)
+      }
+      resolve(decoded)
+    })
   })
 }
 
@@ -57,7 +61,27 @@ const register = async (params = {}) => {
   return Promise.resolve(success())
 }
 
+const getUserInfo = async (token) => {
+  const user  = await verifyToken(token)
+  if(typeof user !== 'object') {
+    return Promise.resolve(err('无效的Token'))
+  }
+  delete user.password
+  return Promise.resolve({ ...success(), data: user })
+}
+
+const updateUserInfo = async (id, info) => {
+  const result = await query('UPDATE user SET ? WHERE id = ?', [info, id])
+  console(result)
+}
+
+const modifyPassword = async = (token, params) => {
+  
+}
+
 module.exports = {
   login,
-  register
+  register,
+  getUserInfo,
+  modifyPassword
 }

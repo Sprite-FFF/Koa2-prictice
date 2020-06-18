@@ -1,6 +1,7 @@
 const { query } = require("../db")
 const user = require('../service/user')
 const fs = require('fs')
+const { request } = require("http")
 
 async function readFile(path) {
   return new Promise((resolve, reject) => {
@@ -16,8 +17,7 @@ const home = async ctx => {
   ctx.body = html
 }
 
-const login = async ctx => {
-  console.log(ctx.request.body)
+const login = async (ctx, next) => {
   const result = await user.login(ctx.request.body)
   ctx.type = 'json'
   ctx.body = result
@@ -29,8 +29,21 @@ const register = async ctx => {
   ctx.body = result
 }
 
+const getUserInfo = async ctx => {
+  const result = await user.getUserInfo(ctx.request.header.token)
+  ctx.type = 'json',
+  ctx.body = result
+}
+
+const modifyPassword = async ctx => {
+  const result = await user.modifyPassword(ctx.request.body)
+  ctx.type = 'json',
+  ctx.body = result
+}
 module.exports = {
   home,
   login,
-  register
+  register,
+  getUserInfo,
+  modifyPassword
 }
