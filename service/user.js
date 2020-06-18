@@ -1,3 +1,6 @@
+const fs = require('fs')
+const path = require('path')
+const JWT = require('jsonwebtoken')
 const { query } = require("../db")
 const { err, success } = require('../utils/responseMessage')
 const getUserByName = async(username) => {
@@ -7,6 +10,25 @@ const getUserByName = async(username) => {
   }
   return Promise.resolve(rows[0])
 }
+
+const generateToken = (payload) => {
+  const priviteKey = fs.readFileSync(path.resolve(__dirname, '../config/rsa_private_key.pem'))
+  const rs256Token = JWT.sign(payload, priviteKey, { algorithm: 'RS256' })
+  const token = Buffer.from(rs256Token).toString('base64')
+  return token
+}
+
+const verifyToken = (token) => {
+  const rs256Token = Buffer.from(token, 'base64').toString()
+  const publicKey = fs.readFileSync(path.resolve(__dirname, '../config/rsa_public_key.pem'))
+  JWT.verify(rs256Token, publicKey, (_error, decoded) => {
+    if(_error) {
+      return Promise.reject(_error.message)
+    }
+    return Promise.resolve(decoded)
+  })
+}
+
 const login = async (params = {}) => {
   if(!params.username || !params.password) {
     return Promise.resolve(err('用户名和密码不能为空'))
@@ -18,7 +40,8 @@ const login = async (params = {}) => {
   if(user.password !== params.password) {
     return Promise.resolve(err('密码错误'))
   }
-  return Promise.resolve({ ...success(), data: rows[0] })
+  const token = generateToken(JSON.parse(JSON.stringify(user)))
+  return Promise.resolve({ ...success(), data: { token } })
 }
 
 const register = async (params = {}) => {
